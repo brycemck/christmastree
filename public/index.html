@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Stream Christmas Tree</title>
+        <style>
+            body {
+                margin: 0;
+            }
+            #treeContainer {
+                position: relative;
+            }
+            #treeContainer > img {
+                position: absolute;
+            }
+            #mainTree {
+                z-index: 0;
+            }
+            #topTree {
+                z-index: 2;
+            }
+            #ornamentContainer {
+                position: absolute;
+                height: 100%;
+                width: 100%;
+            }
+            #ornamentContainer > img {
+                position: absolute;
+                width: 45px;
+            }
+            p {
+                margin: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="container">
+            <div id="treeContainer">
+                <img id="mainTree" src="tree/main-layer.png" />
+                <img id="topTree" src="tree/top-layer.png" />
+            </div>
+            <div id="ornamentContainer">
+                
+            </div>
+        </div>
+        <div id="stats">
+            <p><span id="counter"></span></p>
+        </div>
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            const socket = io();
+            const counterEle = document.getElementById('counter')
+            const mainTreeEle = document.getElementById('mainTree')
+            const ornamentContainerEle = document.getElementById('ornamentContainer')
+            const ornamentWidth = 45;
+
+            function randomInt(min, max) {
+                min = Math.ceil(min)
+                max = Math.floor(max)
+                return Math.floor(Math.random() * (max - min + 1) + min);
+            }
+            function addOrnament() {
+                const width = mainTreeEle.clientWidth;
+                const height = mainTreeEle.clientHeight;
+                const topOffset = 100;
+                const bottomOffset = 50;
+                const leftOffset = 40;
+                const rightOffset = 40;
+
+                const yMinConstraint = topOffset;
+                const yMaxConstraint = height - bottomOffset;
+
+                // if (yMinConstraint >= yMaxConstraint || width <= 0 || height <= 0) {
+                //     throw new Error("Invalid dimensions or top/bottom offsets; the valid Y range is zero or negative.");
+                // }
+
+                // Generate a random Y value within the vertical offset constraints.
+                const P_y = Math.random() * (yMaxConstraint - yMinConstraint) + yMinConstraint;
+
+                // 2. Calculate Natural X-axis Constraints (The Triangle Edges)
+
+                // Pre-calculate the scale factor: W / 2H
+                const W_over_2H = width / (2 * height);
+
+                // X-min (Left Edge): Center - Half-width-at-y
+                const x_min_triangle = width / 2 - (W_over_2H * P_y);
+                // X-max (Right Edge): Center + Half-width-at-y
+                const x_max_triangle = width / 2 + (W_over_2H * P_y);
+
+                // 3. Apply Left/Right Offsets to the X-axis range
+                
+                // The leftOffset moves the boundary inward from the left edge (x_min_triangle).
+                const xMinFinal = x_min_triangle + leftOffset;
+                // The rightOffset moves the boundary inward from the right edge (x_max_triangle).
+                const xMaxFinal = x_max_triangle - rightOffset;
+
+                // 4. Validate and Generate X
+                // if (xMinFinal >= xMaxFinal) {
+                //     throw new Error("Left and right offsets are too large for the chosen Y value; the valid X range is zero or negative.");
+                // }
+
+                // Generate a random X value within the final horizontal constraints.
+                const P_x = Math.random() * (xMaxFinal - xMinFinal) + xMinFinal;
+
+                
+                const frontOrBackProbability = Math.floor(Math.random() * 100) + 1;
+                let zIndex = 1;
+                if (frontOrBackProbability < 30) {
+                    zIndex = 3;
+                }
+                const fileName = `${randomInt(1, 4)}.png`
+                const randomRotate = `${randomInt(-20, 20)}deg`
+
+                ornamentContainerEle.innerHTML += `<img class="ornament" src="tree/ornaments/${fileName}" style="top: ${Math.floor(P_y)-(ornamentWidth/2)}px; left: ${Math.floor(P_x)-(ornamentWidth/2)}px; z-index: 3; transform:rotate(${randomRotate})" />`
+            }
+
+            socket.on('initialData', (data) => {
+                counter.innerHTML = data;
+                console.log(`total counter updated to ${data}`)
+            })
+            socket.on('addOrnament', () => {
+                console.log('adding ornament on the client')
+                counter.innerHTML = `${parseInt(counter.innerHTML) + 1}`
+                addOrnament()
+            })
+        </script>
+    </body>
+</html>
