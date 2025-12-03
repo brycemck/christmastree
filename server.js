@@ -83,8 +83,10 @@ app.get('/addOrnament', (req, res) => {
 
     addCount().then(() => {
       res.status(200)
+      res.end()
     }).catch((e) => {
       res.status(500)
+      res.end()
     })
 });
 
